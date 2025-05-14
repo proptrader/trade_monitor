@@ -39,38 +39,29 @@ def stream_trades():
 
 @bp.route('/history', methods=['GET'])
 def get_trade_history():
-    """Get trade history for an account."""
+    """Get trade history for an account using Kite API."""
     try:
         account_id = request.args.get('account_id')
         page = int(request.args.get('page', 1))
         limit = int(request.args.get('limit', 50))
-        
         if not account_id:
+            log_error("[Trades API] Account ID is required for trade history.")
             return jsonify({"error": "Account ID is required"}), 400
-
-        # Get trades for the current date
-        today = datetime.now().strftime('%Y-%m-%d')
-        account_trades = [
-            trade for trade in trades 
-            if trade.get('account_id') == account_id 
-            and trade.get('date') == today
-        ]
-
+        trades = kite_service.get_trades_for_account(account_id)
         # Sort by timestamp (newest first)
-        account_trades.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
-
+        trades.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
         # Paginate
         start_idx = (page - 1) * limit
         end_idx = start_idx + limit
-        paginated_trades = account_trades[start_idx:end_idx]
-
+        paginated_trades = trades[start_idx:end_idx]
+        log_info(f"[Trades API] Returning {len(paginated_trades)} trades for account {account_id} (page {page})")
         return jsonify({
             'trades': paginated_trades,
-            'has_more': end_idx < len(account_trades),
-            'total': len(account_trades)
+            'has_more': end_idx < len(trades),
+            'total': len(trades)
         })
     except Exception as e:
-        log_error(f"Error getting trade history: {str(e)}")
+        log_error(f"[Trades API] Error getting trade history: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @bp.route('/replicate', methods=['POST'])

@@ -139,4 +139,42 @@ class KiteService:
         for account_id, account in self.accounts.items():
             if account.get('primary'):
                 return account_id
-        return None 
+        return None
+
+    def get_trades_for_account(self, account_id):
+        """
+        Fetches all executed trades for the given account using the Kite API.
+        - No date filtering is needed; Kite API returns only current date's trades.
+        - Handles authentication, logging, and error checking.
+        - Returns a list of trades in the format expected by the frontend.
+        """
+        self._ensure_initialized()
+        account = self.accounts.get(account_id)
+        if not account or not account.get('access_token'):
+            log_error(f"[KiteService] No access token for account {account_id}")
+            return []
+        try:
+            kite = self.get_kite_instance(account_id)
+            if not kite:
+                log_error(f"[KiteService] Could not get Kite instance for {account_id}")
+                return []
+            all_orders = kite.orders()
+            trades = [
+                {
+                    "trade_id": order["order_id"],
+                    "account_id": account_id,
+                    "symbol": order["tradingsymbol"],
+                    "quantity": order["quantity"],
+                    "price": order["average_price"],
+                    "order_type": order["order_type"],
+                    "product_type": order["product"],
+                    "timestamp": str(order["order_timestamp"]),
+                }
+                for order in all_orders
+                if order["status"] == "COMPLETE"
+            ]
+            log_info(f"[KiteService] Fetched {len(trades)} trades for account {account_id}")
+            return trades
+        except Exception as e:
+            log_error(f"[KiteService] Error fetching trades for account {account_id}: {str(e)}")
+            return [] 
