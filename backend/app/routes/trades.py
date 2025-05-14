@@ -98,23 +98,34 @@ def stop_replication():
 
 @bp.route('/export', methods=['POST'])
 def export_trades():
-    """Export trades to Google Sheets."""
+    """Export selected trades to Google Sheets by trade ID (fetching from Kite API)."""
     try:
         data = request.json
-        selected_trades = data.get('trades', [])
+        trade_ids = data.get('trades', [])
         tag = data.get('tag')
+        account_id = data.get('account_id')
 
-        if not selected_trades:
+        if not trade_ids:
             return jsonify({"error": "No trades selected"}), 400
         if not tag:
             return jsonify({"error": "Tag is required"}), 400
+        if not account_id:
+            return jsonify({"error": "Account ID is required"}), 400
+
+        all_trades = kite_service.get_trades_for_account(account_id)
+        selected_trades = [trade for trade in all_trades if trade['trade_id'] in trade_ids]
+        if not selected_trades:
+            log_error(f"[Export] No trades found for selected IDs: {trade_ids}")
+            return jsonify({"error": "No matching trades found for export."}), 400
 
         if sheets_service.export_trades(selected_trades, tag):
+            log_success(f"[Export] Successfully exported {len(selected_trades)} trades for account {account_id}")
             return jsonify({"message": "Trades exported successfully"})
         else:
+            log_error(f"[Export] Failed to export trades for account {account_id}")
             return jsonify({"error": "Failed to export trades"}), 500
     except Exception as e:
-        log_error(f"Error exporting trades: {str(e)}")
+        log_error(f"[Export] Error exporting trades: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @bp.route('/tags', methods=['GET'])

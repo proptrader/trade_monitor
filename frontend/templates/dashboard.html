@@ -34,7 +34,7 @@
                         <select id="tag-select" class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
                             <option value="">Select Tag</option>
                         </select>
-                        <button class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90" hx-post="http://localhost:5000/api/trades/export" hx-include="#tag-select">
+                        <button id="live-export-btn" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90">
                             Export to Google Sheets
                         </button>
                     </div>
@@ -87,7 +87,7 @@
                                 <!-- Recent tags will be loaded here -->
                             </div>
                         </div>
-                        <button class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90" hx-post="http://localhost:5000/api/trades/export" hx-include="#tag-input">
+                        <button id="all-export-btn" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90">
                             Export to Google Sheets
                         </button>
                     </div>
@@ -280,13 +280,42 @@
         }
     });
 
-    // Handle trade export
-    document.body.addEventListener('htmx:afterRequest', function(evt) {
-        if (evt.detail.pathInfo.requestPath === 'http://localhost:5000/api/trades/export') {
-            const response = JSON.parse(evt.detail.xhr.response);
-            if (response.message) {
-                showToast(response.message, 'success');
-            }
+    document.addEventListener('DOMContentLoaded', function() {
+        // Live Trades export
+        const liveExportBtn = document.getElementById('live-export-btn');
+        if (liveExportBtn) {
+            liveExportBtn.onclick = function() {
+                const selectedTrades = Array.from(document.querySelectorAll('#trades-body input[name="trade"]:checked')).map(cb => cb.value);
+                const tag = document.getElementById('tag-select').value;
+                fetch('http://localhost:5000/api/trades/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trades: selectedTrades, tag: tag })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) showToast(data.message, 'success');
+                    else if (data.error) showToast(data.error, 'error');
+                });
+            };
+        }
+        // All Trades export
+        const allExportBtn = document.getElementById('all-export-btn');
+        if (allExportBtn) {
+            allExportBtn.onclick = function() {
+                const selectedTrades = Array.from(document.querySelectorAll('#all-trades-body input[name="trade"]:checked')).map(cb => cb.value);
+                const tag = document.getElementById('tag-input').value;
+                fetch('http://localhost:5000/api/trades/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trades: selectedTrades, tag: tag, account_id: currentAccountId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) showToast(data.message, 'success');
+                    else if (data.error) showToast(data.error, 'error');
+                });
+            };
         }
     });
 </script> 
