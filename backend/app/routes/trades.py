@@ -136,4 +136,18 @@ def get_tags():
         return jsonify(tags)
     except Exception as e:
         log_error(f"Error getting tags: {str(e)}")
-        return jsonify({"error": str(e)}), 500 
+        return jsonify({"error": str(e)}), 500
+
+@bp.route('/dashboard/overview', methods=['GET'])
+def dashboard_overview():
+    """Return dashboard overview stats: active accounts and trades executed per account."""
+    try:
+        active_accounts = kite_service.get_active_accounts()
+        trades_executed = kite_service.get_trades_executed_counts()
+        return jsonify({
+            'active_accounts': len(active_accounts),
+            'trades_executed': trades_executed
+        })
+    except Exception as e:
+        log_error(f"[Dashboard API] Error getting overview: {str(e)}")
+        return jsonify({'error': str(e)}), 500 

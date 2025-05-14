@@ -1,18 +1,54 @@
 <div class="bg-white shadow-sm rounded-lg p-6">
     <h2 class="text-2xl font-bold mb-4">Dashboard Overview</h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-gray-50 rounded-lg p-4 text-center">
-            <div class="text-4xl font-bold text-primary">3</div>
-            <div class="text-gray-600 mt-2">Active Accounts</div>
+    <div id="dashboard-loading" class="text-gray-500">Loading...</div>
+    <div id="dashboard-error" class="text-red-600 hidden"></div>
+    <div id="dashboard-content" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="bg-gray-50 rounded-lg p-4 text-center">
+                <div id="active-accounts" class="text-4xl font-bold text-primary">-</div>
+                <div class="text-gray-600 mt-2">Active Accounts</div>
+            </div>
         </div>
-        <div class="bg-gray-50 rounded-lg p-4 text-center">
-            <div class="text-4xl font-bold text-primary">12</div>
-            <div class="text-gray-600 mt-2">Trades Executed (Account 1)</div>
-        </div>
-        <div class="bg-gray-50 rounded-lg p-4 text-center">
-            <div class="text-4xl font-bold text-primary">8</div>
-            <div class="text-gray-600 mt-2">Trades Copied</div>
+        <div>
+            <h3 class="text-lg font-semibold mb-2">Trades Executed (Current Date)</h3>
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trades Executed</th>
+                    </tr>
+                </thead>
+                <tbody id="trades-executed-body" class="bg-white divide-y divide-gray-200">
+                </tbody>
+            </table>
         </div>
     </div>
-    <!-- TODO: Dynamically load real stats from backend -->
-</div> 
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('http://localhost:5000/api/trades/dashboard/overview')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('dashboard-loading').classList.add('hidden');
+            if (data.error) {
+                document.getElementById('dashboard-error').textContent = data.error;
+                document.getElementById('dashboard-error').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('dashboard-content').classList.remove('hidden');
+            document.getElementById('active-accounts').textContent = data.active_accounts;
+            const tbody = document.getElementById('trades-executed-body');
+            tbody.innerHTML = '';
+            data.trades_executed.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap">${row.account_id}</td><td class="px-6 py-4 whitespace-nowrap">${row.count}</td>`;
+                tbody.appendChild(tr);
+            });
+        })
+        .catch(err => {
+            document.getElementById('dashboard-loading').classList.add('hidden');
+            document.getElementById('dashboard-error').textContent = err;
+            document.getElementById('dashboard-error').classList.remove('hidden');
+        });
+});
+</script> 

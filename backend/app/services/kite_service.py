@@ -177,4 +177,25 @@ class KiteService:
             return trades
         except Exception as e:
             log_error(f"[KiteService] Error fetching trades for account {account_id}: {str(e)}")
-            return [] 
+            return []
+
+    def get_active_accounts(self):
+        """
+        Returns a list of active accounts (those with a valid access token).
+        """
+        self._ensure_initialized()
+        return [acc for acc in self.accounts.values() if acc.get('access_token')]
+
+    def get_trades_executed_counts(self):
+        """
+        Returns a list of dicts: {account_id, count} for each active account, counting executed trades for the current date.
+        """
+        active_accounts = self.get_active_accounts()
+        result = []
+        for acc in active_accounts:
+            trades = self.get_trades_for_account(acc['account_id'])
+            result.append({
+                'account_id': acc['account_id'],
+                'count': len(trades)
+            })
+        return result 
