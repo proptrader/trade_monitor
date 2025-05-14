@@ -1,0 +1,57 @@
+<!-- Logs Table -->
+<div class="bg-white shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-medium text-gray-900">Logs</h2>
+            <div class="flex space-x-4">
+                <select id="log-level" class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary" onchange="filterLogs(this.value)">
+                    <option value="ALL">All Levels</option>
+                    <option value="INFO">Info</option>
+                    <option value="WARNING">Warning</option>
+                    <option value="ERROR">Error</option>
+                    <option value="SUCCESS">Success</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-body" class="bg-white divide-y divide-gray-200" hx-get="http://localhost:5000/api/logs/stream" hx-trigger="load" hx-swap="beforeend">
+                    <!-- Logs will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Filter logs by level
+    function filterLogs(level) {
+        const rows = document.querySelectorAll('#logs-body tr');
+        rows.forEach(row => {
+            const logLevel = row.querySelector('td:nth-child(2)').textContent;
+            if (level === 'ALL' || logLevel === level) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Handle new log entries
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.pathInfo.requestPath === 'http://localhost:5000/api/logs/stream') {
+            const level = document.getElementById('log-level').value;
+            if (level !== 'ALL') {
+                filterLogs(level);
+            }
+        }
+    });
+</script> 

@@ -1,0 +1,107 @@
+<!-- Accounts Table -->
+<div class="bg-white shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">Accounts</h2>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Primary</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Connection Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Token</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="accounts-body" class="bg-white divide-y divide-gray-200" hx-get="http://localhost:5000/api/accounts" hx-trigger="load" hx-swap="innerHTML">
+                    {% for account in accounts %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ account.account_id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if account.primary %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success text-white">Yes</span>
+                            {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">No</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if account.access_token %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success text-white">Connected</span>
+                            {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-error text-white">Disconnected</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <input type="text" data-account-id="{{ account.account_id }}" class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary" placeholder="Enter request token">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if account.access_token %}
+                            <button onclick="updateAccount('{{ account.account_id }}')" class="text-primary hover:text-primary/80">Update</button>
+                            {% else %}
+                            <button onclick="connectAccount('{{ account.account_id }}')" class="text-primary hover:text-primary/80">Connect</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Handle account connection
+    function connectAccount(accountId) {
+        const input = document.querySelector(`input[data-account-id="${accountId}"]`);
+        const requestToken = input.value;
+
+        fetch(`http://localhost:5000/api/accounts/${accountId}/connect`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ request_token: requestToken })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                showToast(data.message, 'success');
+                // Refresh accounts
+                htmx.trigger('#accounts-body', 'load');
+            } else if (data.error) {
+                showToast(data.error, 'error');
+            }
+        })
+        .catch(error => {
+            showToast('Failed to connect account', 'error');
+        });
+    }
+
+    // Handle account update
+    function updateAccount(accountId) {
+        const input = document.querySelector(`input[data-account-id="${accountId}"]`);
+        const requestToken = input.value;
+
+        fetch(`http://localhost:5000/api/accounts/${accountId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ request_token: requestToken })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                showToast(data.message, 'success');
+                // Refresh accounts
+                htmx.trigger('#accounts-body', 'load');
+            } else if (data.error) {
+                showToast(data.error, 'error');
+            }
+        })
+        .catch(error => {
+            showToast('Failed to update account', 'error');
+        });
+    }
+</script> 

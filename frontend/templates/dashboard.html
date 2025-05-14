@@ -1,0 +1,95 @@
+<!-- Trade Controls -->
+<div class="mb-6">
+    <div class="flex space-x-4">
+        <button id="replicate-btn" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90" hx-post="http://localhost:5000/api/trades/replicate" hx-swap="outerHTML">
+            Replicate Trades
+        </button>
+        <button id="stop-btn" class="bg-error text-white px-4 py-2 rounded-md hover:bg-error/90 hidden" hx-post="http://localhost:5000/api/trades/stop" hx-swap="outerHTML">
+            Stop Replicating
+        </button>
+    </div>
+</div>
+
+<!-- Trade Table -->
+<div class="bg-white shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-medium text-gray-900">Trades</h2>
+            <div class="flex space-x-4">
+                <select id="tag-select" class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
+                    <option value="">Select Tag</option>
+                </select>
+                <button class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90" hx-post="http://localhost:5000/api/trades/export" hx-include="#tag-select">
+                    Export to Google Sheets
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary" hx-on:change="toggleAllTrades(this)">
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trade ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody id="trades-body" class="bg-white divide-y divide-gray-200" hx-get="http://localhost:5000/api/trades/stream" hx-trigger="load" hx-swap="beforeend">
+                    <!-- Trades will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Load tags
+    fetch('http://localhost:5000/api/trades/tags')
+        .then(response => response.json())
+        .then(tags => {
+            const select = document.getElementById('tag-select');
+            tags.forEach(tag => {
+                const option = document.createElement('option');
+                option.value = tag;
+                option.textContent = tag;
+                select.appendChild(option);
+            });
+        });
+
+    // Toggle all trades
+    function toggleAllTrades(checkbox) {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"][name="trade"]');
+        checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    }
+
+    // Handle trade replication
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.pathInfo.requestPath === 'http://localhost:5000/api/trades/replicate') {
+            document.getElementById('replicate-btn').classList.add('hidden');
+            document.getElementById('stop-btn').classList.remove('hidden');
+            showToast('Trade replication started', 'success');
+        } else if (evt.detail.pathInfo.requestPath === 'http://localhost:5000/api/trades/stop') {
+            document.getElementById('replicate-btn').classList.remove('hidden');
+            document.getElementById('stop-btn').classList.add('hidden');
+            showToast('Trade replication stopped', 'info');
+        }
+    });
+
+    // Handle trade export
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.pathInfo.requestPath === 'http://localhost:5000/api/trades/export') {
+            const response = JSON.parse(evt.detail.xhr.response);
+            if (response.message) {
+                showToast(response.message, 'success');
+            }
+        }
+    });
+</script> 
