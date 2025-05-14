@@ -1,68 +1,265 @@
-<!-- Trade Controls -->
-<div class="mb-6">
-    <div class="flex space-x-4">
-        <button id="replicate-btn" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90" hx-post="http://localhost:5000/api/trades/replicate" hx-swap="outerHTML">
-            Replicate Trades
-        </button>
-        <button id="stop-btn" class="bg-error text-white px-4 py-2 rounded-md hover:bg-error/90 hidden" hx-post="http://localhost:5000/api/trades/stop" hx-swap="outerHTML">
-            Stop Replicating
-        </button>
+<div class="container mx-auto px-4 py-8">
+    <!-- Tab Navigation -->
+    <div class="border-b border-gray-200 mb-6">
+        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+            <button id="live-trades-tab" class="border-primary text-primary whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Live Trades
+            </button>
+            <button id="all-trades-tab" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                All Trades
+            </button>
+        </nav>
     </div>
-</div>
 
-<!-- Trade Table -->
-<div class="bg-white shadow-sm rounded-lg">
-    <div class="px-4 py-5 sm:p-6">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-medium text-gray-900">Trades</h2>
+    <!-- Live Trades Panel -->
+    <div id="live-trades-panel">
+        <!-- Trade Controls -->
+        <div class="mb-6">
             <div class="flex space-x-4">
-                <select id="tag-select" class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
-                    <option value="">Select Tag</option>
-                </select>
-                <button class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90" hx-post="http://localhost:5000/api/trades/export" hx-include="#tag-select">
-                    Export to Google Sheets
+                <button id="replicate-btn" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90" hx-post="http://localhost:5000/api/trades/replicate" hx-swap="outerHTML">
+                    Replicate Trades
+                </button>
+                <button id="stop-btn" class="bg-error text-white px-4 py-2 rounded-md hover:bg-error/90 hidden" hx-post="http://localhost:5000/api/trades/stop" hx-swap="outerHTML">
+                    Stop Replicating
                 </button>
             </div>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary" hx-on:change="toggleAllTrades(this)">
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trade ID</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account ID</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-                    </tr>
-                </thead>
-                <tbody id="trades-body" class="bg-white divide-y divide-gray-200" hx-get="http://localhost:5000/api/trades/stream" hx-trigger="load" hx-swap="beforeend">
-                    <!-- Trades will be loaded here -->
-                </tbody>
-            </table>
+        <!-- Trade Table -->
+        <div class="bg-white shadow-sm rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-medium text-gray-900">Live Trades</h2>
+                    <div class="flex space-x-4">
+                        <select id="tag-select" class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
+                            <option value="">Select Tag</option>
+                        </select>
+                        <button class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90" hx-post="http://localhost:5000/api/trades/export" hx-include="#tag-select">
+                            Export to Google Sheets
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary" hx-on:change="toggleAllTrades(this)">
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trade ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trades-body" class="bg-white divide-y divide-gray-200" hx-get="http://localhost:5000/api/trades/stream" hx-trigger="load" hx-swap="beforeend">
+                            <!-- Trades will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Trades Panel -->
+    <div id="all-trades-panel" class="hidden">
+        <!-- Account Tabs -->
+        <div class="border-b border-gray-200 mb-6">
+            <nav class="-mb-px flex space-x-8" id="account-tabs" aria-label="Account Tabs">
+                <!-- Account tabs will be loaded here -->
+            </nav>
+        </div>
+
+        <!-- Trade List -->
+        <div class="bg-white shadow-sm rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-medium text-gray-900">All Trades</h2>
+                    <div class="flex space-x-4">
+                        <div class="relative">
+                            <input type="text" id="tag-input" class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary" placeholder="Enter tag...">
+                            <div id="recent-tags" class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md hidden">
+                                <!-- Recent tags will be loaded here -->
+                            </div>
+                        </div>
+                        <button class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90" hx-post="http://localhost:5000/api/trades/export" hx-include="#tag-input">
+                            Export to Google Sheets
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary" hx-on:change="toggleAllTrades(this)">
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trade ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-trades-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Trades will be loaded here -->
+                        </tbody>
+                    </table>
+                    <div id="loading-indicator" class="hidden text-center py-4">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
+    // Tab switching
+    document.getElementById('live-trades-tab').addEventListener('click', () => {
+        document.getElementById('live-trades-panel').classList.remove('hidden');
+        document.getElementById('all-trades-panel').classList.add('hidden');
+        document.getElementById('live-trades-tab').classList.add('border-primary', 'text-primary');
+        document.getElementById('live-trades-tab').classList.remove('border-transparent', 'text-gray-500');
+        document.getElementById('all-trades-tab').classList.add('border-transparent', 'text-gray-500');
+        document.getElementById('all-trades-tab').classList.remove('border-primary', 'text-primary');
+    });
+
+    document.getElementById('all-trades-tab').addEventListener('click', () => {
+        document.getElementById('live-trades-panel').classList.add('hidden');
+        document.getElementById('all-trades-panel').classList.remove('hidden');
+        document.getElementById('all-trades-tab').classList.add('border-primary', 'text-primary');
+        document.getElementById('all-trades-tab').classList.remove('border-transparent', 'text-gray-500');
+        document.getElementById('live-trades-tab').classList.add('border-transparent', 'text-gray-500');
+        document.getElementById('live-trades-tab').classList.remove('border-primary', 'text-primary');
+        loadAccountTabs();
+    });
+
+    // Load account tabs
+    function loadAccountTabs() {
+        fetch('http://localhost:5000/api/accounts')
+            .then(response => response.json())
+            .then(accounts => {
+                const tabsContainer = document.getElementById('account-tabs');
+                tabsContainer.innerHTML = '';
+                accounts.forEach(account => {
+                    const tab = document.createElement('button');
+                    tab.className = 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm';
+                    tab.textContent = account.account_id;
+                    tab.onclick = () => loadTrades(account.account_id);
+                    tabsContainer.appendChild(tab);
+                });
+                if (accounts.length > 0) {
+                    loadTrades(accounts[0].account_id);
+                }
+            });
+    }
+
+    // Load trades with infinite scroll
+    let currentPage = 1;
+    let currentAccountId = null;
+    let isLoading = false;
+    let hasMore = true;
+
+    function loadTrades(accountId) {
+        currentAccountId = accountId;
+        currentPage = 1;
+        hasMore = true;
+        document.getElementById('all-trades-body').innerHTML = '';
+        loadMoreTrades();
+    }
+
+    function loadMoreTrades() {
+        if (isLoading || !hasMore) return;
+        isLoading = true;
+        document.getElementById('loading-indicator').classList.remove('hidden');
+
+        fetch(`http://localhost:5000/api/trades/history?account_id=${currentAccountId}&page=${currentPage}&limit=50`)
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('all-trades-body');
+                data.trades.forEach(trade => {
+                    const row = createTradeRow(trade);
+                    tbody.appendChild(row);
+                });
+                hasMore = data.has_more;
+                currentPage++;
+                isLoading = false;
+                document.getElementById('loading-indicator').classList.add('hidden');
+            });
+    }
+
+    // Infinite scroll observer
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+            loadMoreTrades();
+        }
+    });
+
+    observer.observe(document.getElementById('loading-indicator'));
+
+    // Create trade row
+    function createTradeRow(trade) {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap">
+                <input type="checkbox" name="trade" value="${trade.trade_id}" class="rounded border-gray-300 text-primary focus:ring-primary">
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">${trade.trade_id}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${trade.account_id}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${trade.symbol}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${trade.quantity}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${trade.price}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${trade.order_type}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${trade.product_type}</td>
+            <td class="px-6 py-4 whitespace-nowrap">${new Date(trade.timestamp).toLocaleString()}</td>
+        `;
+        return row;
+    }
+
     // Load tags
     fetch('http://localhost:5000/api/trades/tags')
         .then(response => response.json())
         .then(tags => {
             const select = document.getElementById('tag-select');
+            const recentTags = document.getElementById('recent-tags');
             tags.forEach(tag => {
                 const option = document.createElement('option');
                 option.value = tag;
                 option.textContent = tag;
                 select.appendChild(option);
+
+                const tagElement = document.createElement('div');
+                tagElement.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+                tagElement.textContent = tag;
+                tagElement.onclick = () => {
+                    document.getElementById('tag-input').value = tag;
+                    recentTags.classList.add('hidden');
+                };
+                recentTags.appendChild(tagElement);
             });
         });
+
+    // Show/hide recent tags
+    document.getElementById('tag-input').addEventListener('focus', () => {
+        document.getElementById('recent-tags').classList.remove('hidden');
+    });
+
+    document.getElementById('tag-input').addEventListener('blur', () => {
+        setTimeout(() => {
+            document.getElementById('recent-tags').classList.add('hidden');
+        }, 200);
+    });
 
     // Toggle all trades
     function toggleAllTrades(checkbox) {

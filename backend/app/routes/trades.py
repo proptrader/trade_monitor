@@ -5,6 +5,7 @@ from ..services.sheets_service import SheetsService
 from ..utils.logger import log_info, log_error, log_success
 import json
 import time
+from datetime import datetime
 
 bp = Blueprint('trades', __name__, url_prefix='/api/trades')
 kite_service = KiteService()
@@ -31,10 +32,46 @@ def stream_trades():
             # Get new trades
             new_trades = [trade for trade in trades if trade.get('timestamp', 0) > time.time() - 1]
             if new_trades:
-                yield f"data: {json.dumps(new_trades)}\n\n"
+                yield f"data: {json.dumps({'type': 'live_trade', 'trades': new_trades})}\n\n"
             time.sleep(1)
 
     return Response(generate(), mimetype='text/event-stream')
+
+@bp.route('/history', methods=['GET'])
+def get_trade_history():
+    """Get trade history for an account."""
+    try:
+        account_id = request.args.get('account_id')
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 50))
+        
+        if not account_id:
+            return jsonify({"error": "Account ID is required"}), 400
+
+        # Get trades for the current date
+        today = datetime.now().strftime('%Y-%m-%d')
+        account_trades = [
+            trade for trade in trades 
+            if trade.get('account_id') == account_id 
+            and trade.get('date') == today
+        ]
+
+        # Sort by timestamp (newest first)
+        account_trades.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+
+        # Paginate
+        start_idx = (page - 1) * limit
+        end_idx = start_idx + limit
+        paginated_trades = account_trades[start_idx:end_idx]
+
+        return jsonify({
+            'trades': paginated_trades,
+            'has_more': end_idx < len(account_trades),
+            'total': len(account_trades)
+        })
+    except Exception as e:
+        log_error(f"Error getting trade history: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @bp.route('/replicate', methods=['POST'])
 def start_replication():

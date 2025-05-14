@@ -32,13 +32,16 @@
                             <h1 class="text-xl font-bold text-gray-900">Trade Monitor</h1>
                         </div>
                         <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                            <a href="#" class="border-primary text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" hx-get="/dashboard" hx-target="#content">
+                            <a id="nav-dashboard" href="/dashboard" class="border-primary text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" hx-get="/dashboard" hx-target="#content" hx-push-url="/dashboard">
                                 Dashboard
                             </a>
-                            <a href="#" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" hx-get="/accounts" hx-target="#content">
+                            <a id="nav-trades" href="/trades" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" hx-get="/trades" hx-target="#content" hx-push-url="/trades">
+                                Trades
+                            </a>
+                            <a id="nav-accounts" href="/accounts" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" hx-get="/accounts" hx-target="#content" hx-push-url="/accounts">
                                 Accounts
                             </a>
-                            <a href="#" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" hx-get="/logs" hx-target="#content">
+                            <a id="nav-logs" href="/logs" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" hx-get="/logs" hx-target="#content" hx-push-url="/logs">
                                 Logs
                             </a>
                         </div>
@@ -91,6 +94,49 @@
         document.body.addEventListener('htmx:responseError', function(evt) {
             const response = JSON.parse(evt.detail.xhr.response);
             showToast(response.error || 'An error occurred', 'error');
+        });
+
+        // SPA/HTMX: Active tab styling
+        function setActiveTab(tabId) {
+            const tabs = ['nav-dashboard', 'nav-trades', 'nav-accounts', 'nav-logs'];
+            tabs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (id === tabId) {
+                        el.classList.add('border-primary', 'text-gray-900');
+                        el.classList.remove('border-transparent', 'text-gray-500');
+                    } else {
+                        el.classList.remove('border-primary', 'text-gray-900');
+                        el.classList.add('border-transparent', 'text-gray-500');
+                    }
+                }
+            });
+        }
+
+        // Listen for HTMX afterOnLoad to update active tab
+        document.body.addEventListener('htmx:pushedIntoHistory', function(evt) {
+            const url = window.location.pathname;
+            if (url.startsWith('/dashboard')) setActiveTab('nav-dashboard');
+            else if (url.startsWith('/trades')) setActiveTab('nav-trades');
+            else if (url.startsWith('/accounts')) setActiveTab('nav-accounts');
+            else if (url.startsWith('/logs')) setActiveTab('nav-logs');
+        });
+
+        // On initial load, set active tab based on URL
+        document.addEventListener('DOMContentLoaded', function() {
+            const url = window.location.pathname;
+            if (url.startsWith('/dashboard')) setActiveTab('nav-dashboard');
+            else if (url.startsWith('/trades')) setActiveTab('nav-trades');
+            else if (url.startsWith('/accounts')) setActiveTab('nav-accounts');
+            else if (url.startsWith('/logs')) setActiveTab('nav-logs');
+        });
+
+        // Auto-load dashboard tab on first load if #content is empty
+        document.addEventListener('DOMContentLoaded', function() {
+            const url = window.location.pathname;
+            if (url === '/' && document.getElementById('content').innerHTML.trim() === '') {
+                document.getElementById('nav-dashboard').click();
+            }
         });
     </script>
 </body>
