@@ -4,6 +4,7 @@ from flask import current_app
 from ..utils.logger import log_info, log_error, log_success
 import time
 import traceback
+from datetime import datetime, date
 
 class KiteService:
     def __init__(self):
@@ -18,13 +19,56 @@ class KiteService:
                 self.load_accounts()
                 self._initialized = True
 
+    def _check_and_reset_tokens(self):
+        """Check if token reset is needed and perform reset if necessary."""
+        try:
+            init_tracker_path = current_app.config.get('INIT_TRACKER_PATH', 'config/init_tracker.json')
+            
+            # Load or create init tracker
+            try:
+                with open(init_tracker_path, 'r') as f:
+                    tracker_data = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                tracker_data = {"last_init_date": None}
+
+            # Get current date as string
+            today = date.today().isoformat()
+            last_init = tracker_data.get('last_init_date')
+
+            # Check if initialization is needed
+            if last_init != today:
+                log_info("[KiteService] Daily token initialization required")
+                
+                # Reset all access tokens
+                for account in self.accounts.values():
+                    account['access_token'] = ""
+                
+                # Save accounts with reset tokens
+                self.save_accounts()
+                
+                # Update tracker
+                tracker_data['last_init_date'] = today
+                with open(init_tracker_path, 'w') as f:
+                    json.dump(tracker_data, f, indent=2)
+                
+                log_success("[KiteService] Daily token initialization completed")
+            else:
+                log_info("[KiteService] Daily token initialization already done")
+
+        except Exception as e:
+            log_error(f"[KiteService] Error in token initialization: {str(e)}\n{traceback.format_exc()}")
+
     def load_accounts(self):
-        """Load accounts from config file."""
+        """Load accounts from config file and check for token reset."""
         log_info("[KiteService] Loading accounts from config file...")
         try:
             with open(current_app.config['ACCOUNTS_CONFIG_PATH'], 'r') as f:
                 self.accounts = {acc['account_id']: acc for acc in json.load(f)}
             log_info(f"[KiteService] Accounts loaded: {[a for a in self.accounts.keys()]}")
+            
+            # Check and reset tokens if needed
+            self._check_and_reset_tokens()
+            
         except Exception as e:
             log_error(f"[KiteService] Error loading accounts: {str(e)}\n{traceback.format_exc()}")
             self.accounts = {}

@@ -92,3 +92,73 @@ All issues have been resolved. The Dashboard Overview and Export to Google Sheet
 - Add inline styles with !important rules to override potentially conflicting styles.
 - Use event delegation for dynamically created elements.
 - Track DOM mutations to respond to dynamic content changes.
+
+# Trade Monitor - Access Token Initialization Plan
+
+## Background and Motivation
+- The application needs to initialize access tokens to empty strings at the start of each day
+- This should only happen once per day when the app is first run
+- This ensures a clean state for token management each day
+
+## Key Challenges and Analysis
+1. Need to track when the app was last initialized
+2. Need to determine if it's a new day
+3. Need to modify the access tokens in the config file
+4. Need to ensure this happens only once per day
+5. Need to handle this during app startup
+
+## High-level Task Breakdown
+
+1. Create a new initialization tracking file
+   - Create `config/init_tracker.json` to store last initialization date
+   - Success Criteria: File exists with proper structure
+
+2. Add initialization check function to KiteService
+   - Add method to check if initialization is needed
+   - Compare current date with last initialization date
+   - Success Criteria: Function correctly identifies when initialization is needed
+
+3. Add token reset functionality
+   - Add method to reset access tokens
+   - Update config file with empty tokens
+   - Update initialization tracker
+   - Success Criteria: Tokens are reset and tracker is updated
+
+4. Integrate with app startup
+   - Modify app initialization to perform the check
+   - Call token reset if needed
+   - Success Criteria: Initialization happens automatically on app startup
+
+## Project Status Board
+- [x] Task 1: Create initialization tracker file
+- [x] Task 2: Add initialization check function
+- [x] Task 3: Add token reset functionality
+- [x] Task 4: Integrate with app startup
+
+## Current Status / Progress Tracking
+Implementation completed:
+1. Created `config/init_tracker.json` to store last initialization date
+2. Added `_check_and_reset_tokens()` method to KiteService
+3. Modified `load_accounts()` to perform token reset check
+4. Added INIT_TRACKER_PATH to app configuration
+
+The implementation:
+- Checks if token reset is needed by comparing current date with last initialization date
+- Resets all access tokens to empty strings when needed
+- Updates the tracker file with the current date after reset
+- Handles all error cases with proper logging
+- Only performs reset once per day on first run
+
+## Executor's Feedback or Assistance Requests
+Implementation is complete and ready for testing. The system will now:
+1. Initialize access tokens to empty strings at the start of each day
+2. Only perform initialization once per day
+3. Track initialization state in `config/init_tracker.json`
+4. Handle all error cases gracefully with proper logging
+
+## Lessons
+- Always ensure proper date comparison using ISO format
+- Keep track of initialization state in a separate file
+- Handle file operations safely with proper error handling
+- Use app configuration for file paths
+- Implement comprehensive logging for debugging

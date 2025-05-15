@@ -18,7 +18,8 @@ def create_app():
         ALLOWED_ORDER_TYPES_PATH="config/allowed_order_types.json",
         TAGS_PATH="config/tags.json",
         GOOGLE_SHEETS_CREDENTIALS="config/heroic-muse-377907-482b72703bd0.json",
-        LOG_FILE="logs/app.log"
+        LOG_FILE="logs/app.log",
+        INIT_TRACKER_PATH="config/init_tracker.json"
     )
 
     # Register blueprints
