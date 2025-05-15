@@ -1,0 +1,32 @@
+<div class="bg-white shadow-sm rounded-lg p-6" id="dashboard-container" style="background-color: white; border-radius: 0.5rem; padding: 1.5rem; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+    <h2 class="text-2xl font-bold mb-4" style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem;">Dashboard Overview</h2>
+    <div id="dashboard-loading" class="text-gray-500" style="color: #6b7280;">Loading...</div>
+    <div id="dashboard-error" class="text-red-600 hidden" style="color: #dc2626; display: none;"></div>
+    <div id="dashboard-content" class="hidden" style="display: none;">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6" style="margin-bottom: 1.5rem;">
+            <div class="bg-gray-50 rounded-lg p-4 text-center" style="background-color: #f9fafb; border-radius: 0.5rem; padding: 1rem; text-align: center;">
+                <div id="active-accounts" class="text-4xl font-bold text-primary" style="font-size: 2.25rem; font-weight: bold; color: #1a56db;">-</div>
+                <div class="text-gray-600 mt-2" style="color: #4b5563; margin-top: 0.5rem;">Active Accounts</div>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-lg font-semibold mb-2" style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem;">Trades Executed (Current Date)</h3>
+            <table class="min-w-full divide-y divide-gray-200" style="width: 100%; border-collapse: collapse;">
+                <thead class="bg-gray-50" style="background-color: #f9fafb;">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="padding: 0.75rem 1.5rem; text-align: left; font-size: 0.75rem; font-weight: 500; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Account ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="padding: 0.75rem 1.5rem; text-align: left; font-size: 0.75rem; font-weight: 500; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Trades Executed</th>
+                    </tr>
+                </thead>
+                <tbody id="trades-executed-body" class="bg-white divide-y divide-gray-200" style="background-color: white;">
+                    <!-- Trades executed data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize dashboard
+    initializeDashboard();
+</script> 

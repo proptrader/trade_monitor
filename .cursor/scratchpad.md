@@ -162,3 +162,238 @@ Implementation is complete and ready for testing. The system will now:
 - Handle file operations safely with proper error handling
 - Use app configuration for file paths
 - Implement comprehensive logging for debugging
+
+# Template Rendering Fix Plan
+
+## Background and Motivation
+- When refreshing any page, the base template is not being rendered
+- Only partial content is being returned, causing layout issues
+- Need to properly handle both full page loads and HTMX requests
+
+## Key Challenges and Analysis
+1. Routes are returning partial templates directly
+2. No distinction between full page loads and HTMX requests
+3. No template inheritance structure
+4. Need to maintain HTMX functionality while fixing page refreshes
+
+## High-level Task Breakdown
+
+1. Modify base template to support template inheritance
+   - Add Jinja2 block for content
+   - Move navigation to base template
+   - Success Criteria: Base template has proper block structure
+   ✓ COMPLETED: Added title, head, content, and scripts blocks to base.html
+
+2. Update content templates to extend base template
+   - Modify dashboard_summary.html
+   - Modify dashboard.html
+   - Modify accounts.html
+   - Modify logs.html
+   - Success Criteria: All templates properly extend base.html
+   ✓ COMPLETED: Updated dashboard_summary.html with proper template inheritance
+
+3. Create partial templates for HTMX requests
+   - Create partials directory
+   - Create partial versions of each template
+   - Success Criteria: Partial templates exist without base template inheritance
+   ✓ COMPLETED: Created partials/dashboard_summary.html
+
+4. Update Flask routes to handle both full page loads and HTMX requests
+   - Add HTMX request detection
+   - Return appropriate template based on request type
+   - Success Criteria: Routes return full or partial templates correctly
+   ✓ COMPLETED: Updated Flask routes with HTMX request handling
+
+## Current Status / Progress Tracking
+Implementation completed for dashboard_summary:
+1. Added template inheritance blocks to base.html
+2. Updated dashboard_summary.html to extend base.html
+3. Created partial version in partials/dashboard_summary.html
+4. Modified Flask routes to handle both full page loads and HTMX requests
+
+Next steps:
+1. Apply the same changes to dashboard.html
+2. Apply the same changes to accounts.html
+3. Apply the same changes to logs.html
+
+## Executor's Feedback or Assistance Requests
+The initial implementation for dashboard_summary.html is complete. Please test the following:
+1. Navigate to /dashboard directly (should show full page with navigation)
+2. Click dashboard link in navigation (should update content area only)
+3. Refresh the page (should maintain layout and styling)
+
+If these tests pass, we can proceed with updating the remaining templates.
+
+## Lessons
+- Always implement proper template inheritance from the start
+- Separate full page templates from partial templates for HTMX
+- Check request headers to determine appropriate template response
+- Keep base styles in the base template for consistent layout
+
+# Dashboard Overview Restoration Plan
+
+## Background and Motivation
+- The dashboard overview content was accidentally changed during template inheritance implementation
+- Need to restore the original content showing active accounts and trades executed per account
+- Must maintain the new template inheritance structure while restoring the original functionality
+
+## Key Challenges and Analysis
+1. Original dashboard showed:
+   - Number of active accounts
+   - Trades executed per account for the current date
+2. Backend API endpoint `/api/trades/dashboard/overview` returns:
+   - active_accounts count
+   - trades_executed list with account_id and count
+3. Need to preserve template inheritance while restoring content
+
+## High-level Task Breakdown
+
+1. Restore dashboard_summary.html content
+   - Keep template inheritance structure (extends base.html)
+   - Restore original dashboard container with loading states
+   - Add back the active accounts counter
+   - Restore trades executed table
+   - Success Criteria: Dashboard shows active accounts and trades executed table
+
+2. Restore dashboard_summary partial template
+   - Create matching partial version without inheritance
+   - Keep all functionality intact
+   - Success Criteria: Partial template works with HTMX requests
+
+3. Update JavaScript initialization
+   - Restore original loadDashboardData function
+   - Keep visibility enforcement
+   - Maintain error handling
+   - Success Criteria: Dashboard data loads and updates properly
+
+4. Test functionality
+   - Test direct page load
+   - Test HTMX navigation
+   - Test data refresh
+   - Success Criteria: All features work in both contexts
+
+## Project Status Board
+- [x] Task 1: Restore dashboard_summary.html content
+- [x] Task 2: Restore dashboard_summary partial template
+- [x] Task 3: Update JavaScript initialization
+- [ ] Task 4: Test functionality
+
+## Current Status / Progress Tracking
+Implementation completed:
+1. Restored original dashboard overview content in dashboard_summary.html
+2. Created matching partial template in partials/dashboard_summary.html
+3. Restored original JavaScript functionality with proper initialization and error handling
+
+Ready for testing:
+1. Navigate to /dashboard directly (should show full page with navigation)
+2. Click dashboard link in navigation (should update content area only)
+3. Refresh the page (should maintain layout and styling)
+4. Verify active accounts counter updates
+5. Verify trades executed table populates correctly
+
+## Executor's Feedback or Assistance Requests
+Please test the restored dashboard functionality:
+1. The dashboard should show the number of active accounts
+2. The trades executed table should show trades per account for the current date
+3. All styling should be consistent whether loaded directly or via HTMX
+4. Error states should be properly handled and displayed
+
+## Lessons
+- Keep backups before making major template changes
+- Test template inheritance changes carefully
+- Maintain original functionality while improving structure
+- Use inline styles as fallbacks for critical UI elements
+- Implement multiple initialization paths for reliability
+
+# Trade Monitor Template Update Project
+
+## Background and Motivation
+The Trade Monitor application needs template updates to fix inheritance issues and restore functionality. The main goals are:
+1. Ensure proper template inheritance
+2. Restore dashboard functionality
+3. Maintain all core features (trade monitoring, Google Sheets export)
+4. Keep the UI clean and responsive
+
+## Key Challenges and Analysis
+1. Template Inheritance
+   - Base template (base.html) is properly structured with blocks for title, head, content, and scripts
+   - Child templates need to properly extend and use these blocks
+   - HTMX integration needs to be maintained for partial updates
+
+2. Dashboard Content
+   - Dashboard shows active accounts and trades executed per account
+   - Uses HTMX for dynamic updates
+   - Needs proper error handling and loading states
+   - Must maintain Google Sheets export functionality
+
+3. UI Components
+   - Tailwind CSS is properly loaded with fallback styles
+   - Navigation and layout components are well-structured
+   - Toast notifications system is in place
+   - Responsive design is maintained
+
+## High-level Task Breakdown
+
+1. Verify Base Template Structure ✓
+   - Base template has all necessary blocks
+   - Tailwind CSS loading is properly handled
+   - Navigation and layout are responsive
+   Success Criteria: Base template loads without errors, Tailwind CSS applies correctly
+
+2. Update Dashboard Summary Template
+   - Ensure proper extension of base template
+   - Verify dashboard overview functionality
+   - Test active accounts display
+   - Test trades executed table
+   Success Criteria: Dashboard loads and displays data correctly, maintains styling
+
+3. Update Main Dashboard Template
+   - Ensure proper extension of base template
+   - Verify live trades functionality
+   - Test trade replication controls
+   - Test Google Sheets export
+   Success Criteria: Live trades update in real-time, export works correctly
+
+4. Update Remaining Templates
+   - Update accounts.html
+   - Update logs.html
+   - Ensure consistent styling
+   Success Criteria: All pages maintain functionality and styling
+
+5. Test HTMX Integration
+   - Verify partial updates work
+   - Test navigation between pages
+   - Ensure proper state management
+   Success Criteria: Smooth navigation, no page reloads where unnecessary
+
+## Project Status Board
+- [x] Base template structure verified
+- [x] Dashboard summary template updated
+- [x] Main dashboard template updated
+- [x] Accounts template updated
+- [x] Logs template updated
+- [ ] HTMX integration tested
+- [ ] All functionality verified
+
+## Executor's Feedback or Assistance Requests
+- Base template looks good with proper block structure
+- Dashboard summary template has proper inheritance and auto-refresh
+- Main dashboard template updated with improved functionality
+- Accounts template updated with proper inheritance and improved error handling
+- Logs template updated with proper inheritance and log level styling
+- Need to verify HTMX endpoints are working correctly
+- Ready for testing all functionality
+
+## Lessons
+1. Always include fallback styles for critical UI components
+2. Use proper template inheritance with clear block structure
+3. Maintain error handling and loading states
+4. Document all HTMX endpoints and their functionality
+5. Remove hardcoded URLs (like localhost) from templates
+6. Use CSS classes instead of inline styles for better maintainability
+7. Add proper error handling for all fetch requests
+8. Include loading states and spinners for better UX
+9. Use consistent styling patterns across all templates
+10. Add error handling for HTMX requests
+11. Implement proper log level filtering and styling
+12. Add input validation before making API calls

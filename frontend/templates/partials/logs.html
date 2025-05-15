@@ -1,0 +1,225 @@
+<div class="bg-white shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-medium text-gray-900">Logs</h2>
+            <div class="flex space-x-4">
+                <select id="log-level" class="log-level-select" onchange="filterLogs(this.value)">
+                    <option value="ALL">All Levels</option>
+                    <option value="INFO">Info</option>
+                    <option value="WARNING">Warning</option>
+                    <option value="ERROR">Error</option>
+                    <option value="SUCCESS">Success</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="log-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Level</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-body" class="divide-y divide-gray-200" 
+                       hx-get="{{ backend_url }}/api/logs/history"
+                       hx-trigger="load"
+                       hx-swap="innerHTML"
+                       hx-on::after-request="handleHistoryResponse(event)">
+                    <tr>
+                        <td colspan="3" class="text-center py-4 text-gray-500">
+                            <span class="loading">Loading logs...</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Templates -->
+<template id="error-template">
+    <tr>
+        <td colspan="3" class="text-center py-4 text-red-500">
+            {message}
+        </td>
+    </tr>
+</template>
+
+<template id="empty-template">
+    <tr>
+        <td colspan="3" class="text-center py-4 text-gray-500">
+            {message}
+        </td>
+    </tr>
+</template>
+
+<template id="log-entry-template">
+    <tr>
+        <td>{timestamp}</td>
+        <td><span class="log-level {level}">{level}</span></td>
+        <td>{message}</td>
+    </tr>
+</template>
+
+<script>
+    // Parse Python datetime format
+    function parsePythonDatetime(timestamp) {
+        try {
+            // Replace comma with dot for milliseconds and convert to ISO format
+            const isoTimestamp = timestamp.replace(',', '.');
+            const date = new Date(isoTimestamp);
+            
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+                console.error('Invalid timestamp:', timestamp);
+                return timestamp; // Return original string as fallback
+            }
+            
+            // Format the date in local timezone
+            return date.toLocaleString(undefined, {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                fractionalSecondDigits: 3
+            });
+        } catch (e) {
+            console.error('Error parsing timestamp:', e);
+            return timestamp; // Return original string as fallback
+        }
+    }
+
+    // Create log entry row
+    function createLogEntry(log) {
+        const template = document.getElementById('log-entry-template').innerHTML;
+        return template
+            .replace('{timestamp}', parsePythonDatetime(log.timestamp))
+            .replace(/{level}/g, log.level.toLowerCase())
+            .replace('{message}', log.message);
+    }
+
+    // Show message using template
+    function showMessage(templateId, message) {
+        const template = document.getElementById(templateId).innerHTML;
+        return template.replace('{message}', message);
+    }
+
+    // Handle history response
+    function handleHistoryResponse(event) {
+        const detail = event.detail;
+        if (!detail.successful) {
+            // Show error message
+            const tbody = document.getElementById('logs-body');
+            tbody.innerHTML = showMessage('error-template', 
+                'Failed to load logs. Please try refreshing the page.');
+            return;
+        }
+
+        try {
+            const response = JSON.parse(detail.xhr.response);
+            
+            // Handle error response
+            if (response.error) {
+                const tbody = document.getElementById('logs-body');
+                tbody.innerHTML = showMessage('error-template', 
+                    response.error + (response.details ? `\n${response.details}` : ''));
+                return;
+            }
+
+            // Handle empty logs
+            if (!response.logs || response.logs.length === 0) {
+                const tbody = document.getElementById('logs-body');
+                tbody.innerHTML = showMessage('empty-template', 
+                    response.message || 'No logs available yet. New logs will appear automatically.');
+                initLogStream();
+                return;
+            }
+
+            // Display logs
+            const tbody = document.getElementById('logs-body');
+            tbody.innerHTML = response.logs.map(log => createLogEntry(log)).join('');
+            
+            // Initialize streaming
+            initLogStream();
+            
+            // Apply current filter
+            const level = document.getElementById('log-level').value;
+            if (level !== 'ALL') {
+                filterLogs(level);
+            }
+        } catch (e) {
+            console.error('Failed to process response:', e);
+            const tbody = document.getElementById('logs-body');
+            tbody.innerHTML = showMessage('error-template', 
+                'Failed to process logs. Please try refreshing the page.');
+        }
+    }
+
+    // Filter logs by level
+    function filterLogs(level) {
+        const rows = document.querySelectorAll('#logs-body tr');
+        rows.forEach(row => {
+            const logLevel = row.querySelector('td:nth-child(2) .log-level')?.textContent;
+            if (!logLevel || level === 'ALL' || logLevel === level) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Initialize SSE stream for real-time logs
+    function initLogStream() {
+        const evtSource = new EventSource('{{ backend_url }}/api/logs/stream');
+        
+        evtSource.onmessage = function(event) {
+            try {
+                const log = JSON.parse(event.data);
+                if (log.error) {
+                    console.error('Log stream error:', log.error);
+                    return;
+                }
+                
+                const tbody = document.getElementById('logs-body');
+                const isEmpty = tbody.querySelector('td[colspan="3"]') !== null;
+                
+                if (isEmpty) {
+                    tbody.innerHTML = ''; // Clear empty message
+                }
+                
+                tbody.insertAdjacentHTML('beforeend', createLogEntry(log));
+                
+                // Apply current filter
+                const level = document.getElementById('log-level').value;
+                if (level !== 'ALL') {
+                    filterLogs(level);
+                }
+            } catch (e) {
+                console.error('Failed to process log:', e);
+            }
+        };
+
+        evtSource.onerror = function(err) {
+            console.error('EventSource failed:', err);
+            evtSource.close();
+            // Show error after 3 failed attempts
+            if (this.failed >= 2) {
+                const tbody = document.getElementById('logs-body');
+                const hasError = tbody.querySelector('.text-red-500') !== null;
+                if (!hasError) {
+                    tbody.innerHTML = showMessage('error-template',
+                        'Lost connection to log stream. Please refresh the page.');
+                }
+            } else {
+                this.failed = (this.failed || 0) + 1;
+            }
+        };
+
+        // Handle page unload
+        window.addEventListener('beforeunload', () => evtSource.close());
+    }
+</script> 

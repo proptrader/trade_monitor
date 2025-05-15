@@ -1,8 +1,62 @@
-{% extends "base.html" %}
+<div class="bg-white shadow-sm rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">Accounts</h2>
 
-{% block title %}Accounts{% endblock %}
+        <div class="overflow-x-auto">
+            <table class="account-table">
+                <thead>
+                    <tr>
+                        <th>Account ID</th>
+                        <th>Primary</th>
+                        <th>Connection Status</th>
+                        <th>Request Token</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="accounts-body" class="divide-y divide-gray-200" 
+                       hx-get="/api/accounts" 
+                       hx-trigger="load" 
+                       hx-swap="innerHTML">
+                    {% for account in accounts %}
+                    <tr>
+                        <td>{{ account.account_id }}</td>
+                        <td>
+                            {% if account.primary %}
+                            <span class="status-badge success">Yes</span>
+                            {% else %}
+                            <span class="status-badge neutral">No</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if account.access_token %}
+                            <span class="status-badge success">Connected</span>
+                            {% else %}
+                            <span class="status-badge error">Disconnected</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <input type="text" 
+                                   data-account-id="{{ account.account_id }}" 
+                                   class="account-input" 
+                                   placeholder="Enter request token">
+                        </td>
+                        <td>
+                            {% if account.access_token %}
+                            <button onclick="updateAccount('{{ account.account_id }}')" 
+                                    class="account-button">Update</button>
+                            {% else %}
+                            <button onclick="connectAccount('{{ account.account_id }}')" 
+                                    class="account-button">Connect</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-{% block head %}
 <style>
     /* Critical account styles */
     .account-table {
@@ -78,70 +132,7 @@
         color: rgba(26, 86, 219, 0.8);
     }
 </style>
-{% endblock %}
 
-{% block content %}
-<div class="bg-white shadow-sm rounded-lg">
-    <div class="px-4 py-5 sm:p-6">
-        <h2 class="text-lg font-medium text-gray-900 mb-4">Accounts</h2>
-
-        <div class="overflow-x-auto">
-            <table class="account-table">
-                <thead>
-                    <tr>
-                        <th>Account ID</th>
-                        <th>Primary</th>
-                        <th>Connection Status</th>
-                        <th>Request Token</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="accounts-body" class="divide-y divide-gray-200" 
-                       hx-get="/api/accounts" 
-                       hx-trigger="load" 
-                       hx-swap="innerHTML">
-                    {% for account in accounts %}
-                    <tr>
-                        <td>{{ account.account_id }}</td>
-                        <td>
-                            {% if account.primary %}
-                            <span class="status-badge success">Yes</span>
-                            {% else %}
-                            <span class="status-badge neutral">No</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if account.access_token %}
-                            <span class="status-badge success">Connected</span>
-                            {% else %}
-                            <span class="status-badge error">Disconnected</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <input type="text" 
-                                   data-account-id="{{ account.account_id }}" 
-                                   class="account-input" 
-                                   placeholder="Enter request token">
-                        </td>
-                        <td>
-                            {% if account.access_token %}
-                            <button onclick="updateAccount('{{ account.account_id }}')" 
-                                    class="account-button">Update</button>
-                            {% else %}
-                            <button onclick="connectAccount('{{ account.account_id }}')" 
-                                    class="account-button">Connect</button>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
 <script>
     // Handle account connection
     function connectAccount(accountId) {
@@ -219,5 +210,4 @@
             // Any initialization code if needed
         });
     }
-</script>
-{% endblock %} 
+</script> 

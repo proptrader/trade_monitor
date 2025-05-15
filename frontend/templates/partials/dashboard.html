@@ -1,0 +1,420 @@
+<!-- Tab Navigation -->
+<div class="border-b border-gray-200 mb-6">
+    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <button id="live-trades-tab" class="tab-button active">
+            Live Trades
+        </button>
+        <button id="all-trades-tab" class="tab-button">
+            All Trades
+        </button>
+    </nav>
+</div>
+
+<!-- Live Trades Panel -->
+<div id="live-trades-panel">
+    <!-- Trade Controls -->
+    <div class="mb-6">
+        <div class="flex space-x-4">
+            <button id="replicate-btn" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90" 
+                    hx-post="{{ backend_url }}/api/trades/replicate" 
+                    hx-swap="outerHTML">
+                Replicate Trades
+            </button>
+            <button id="stop-btn" class="bg-error text-white px-4 py-2 rounded-md hover:bg-error/90 hidden" 
+                    hx-post="{{ backend_url }}/api/trades/stop" 
+                    hx-swap="outerHTML">
+                Stop Replicating
+            </button>
+        </div>
+    </div>
+
+    <!-- Trade Table -->
+    <div class="bg-white shadow-sm rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-medium text-gray-900">Live Trades</h2>
+                <div class="flex space-x-4">
+                    <select id="tag-select" class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
+                        <option value="">Select Tag</option>
+                    </select>
+                    <button id="live-export-btn" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90">
+                        Export to Google Sheets
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="trade-table">
+                    <thead>
+                        <tr>
+                            <th>
+                                <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary" 
+                                       hx-on:change="toggleAllTrades(this)">
+                            </th>
+                            <th>Trade ID</th>
+                            <th>Account ID</th>
+                            <th>Symbol</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Order Type</th>
+                            <th>Product Type</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trades-body" class="divide-y divide-gray-200" 
+                           hx-get="{{ backend_url }}/api/trades/stream" 
+                           hx-trigger="load" 
+                           hx-swap="beforeend">
+                        <!-- Trades will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- All Trades Panel -->
+<div id="all-trades-panel" class="hidden">
+    <!-- Account Tabs -->
+    <div class="border-b border-gray-200 mb-6">
+        <nav class="-mb-px flex space-x-8" id="account-tabs" aria-label="Account Tabs">
+            <!-- Account tabs will be loaded here -->
+        </nav>
+    </div>
+
+    <!-- Trade List -->
+    <div class="bg-white shadow-sm rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-medium text-gray-900">All Trades</h2>
+                <div class="flex space-x-4">
+                    <div class="relative">
+                        <input type="text" id="tag-input" 
+                               class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary" 
+                               placeholder="Enter tag...">
+                        <div id="recent-tags" class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md hidden">
+                            <!-- Recent tags will be loaded here -->
+                        </div>
+                    </div>
+                    <button id="all-export-btn" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90">
+                        Export to Google Sheets
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="trade-table">
+                    <thead>
+                        <tr>
+                            <th>
+                                <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary" 
+                                       hx-on:change="toggleAllTrades(this)">
+                            </th>
+                            <th>Trade ID</th>
+                            <th>Account ID</th>
+                            <th>Symbol</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Order Type</th>
+                            <th>Product Type</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="all-trades-body" class="divide-y divide-gray-200">
+                        <!-- Trades will be loaded here -->
+                    </tbody>
+                </table>
+                <div id="loading-indicator" class="hidden text-center py-4">
+                    <div class="loading-spinner mx-auto"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Parse timestamp consistently across the application
+    function parseTimestamp(timestamp) {
+        try {
+            // Handle Python datetime format with comma for milliseconds
+            const isoTimestamp = timestamp.replace(',', '.');
+            const date = new Date(isoTimestamp);
+            
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+                console.error('Invalid timestamp:', timestamp);
+                return timestamp; // Return original string as fallback
+            }
+            
+            // Format the date in local timezone
+            return date.toLocaleString(undefined, {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                fractionalSecondDigits: 3
+            });
+        } catch (e) {
+            console.error('Error parsing timestamp:', e);
+            return timestamp; // Return original string as fallback
+        }
+    }
+
+    // Tab switching
+    document.getElementById('live-trades-tab').addEventListener('click', () => {
+        switchTab('live');
+    });
+
+    document.getElementById('all-trades-tab').addEventListener('click', () => {
+        switchTab('all');
+        loadAccountTabs();
+    });
+
+    function switchTab(tab) {
+        const livePanelEl = document.getElementById('live-trades-panel');
+        const allPanelEl = document.getElementById('all-trades-panel');
+        const liveTabEl = document.getElementById('live-trades-tab');
+        const allTabEl = document.getElementById('all-trades-tab');
+        
+        if (tab === 'live') {
+            livePanelEl.classList.remove('hidden');
+            allPanelEl.classList.add('hidden');
+            liveTabEl.classList.add('active');
+            allTabEl.classList.remove('active');
+        } else {
+            livePanelEl.classList.add('hidden');
+            allPanelEl.classList.remove('hidden');
+            liveTabEl.classList.remove('active');
+            allTabEl.classList.add('active');
+        }
+    }
+
+    // Load account tabs
+    function loadAccountTabs() {
+        fetch(`${window.config.backendUrl}/api/accounts`)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            })
+            .then(accounts => {
+                const tabsContainer = document.getElementById('account-tabs');
+                tabsContainer.innerHTML = '';
+                accounts.forEach(account => {
+                    const tab = document.createElement('button');
+                    tab.className = 'tab-button';
+                    tab.textContent = account.account_id;
+                    tab.onclick = () => {
+                        // Remove active class from all tabs
+                        tabsContainer.querySelectorAll('.tab-button').forEach(t => t.classList.remove('active'));
+                        // Add active class to clicked tab
+                        tab.classList.add('active');
+                        loadTrades(account.account_id);
+                    };
+                    tabsContainer.appendChild(tab);
+                });
+                if (accounts.length > 0) {
+                    tabsContainer.firstChild.classList.add('active');
+                    loadTrades(accounts[0].account_id);
+                }
+            })
+            .catch(err => {
+                showToast(`Failed to load accounts: ${err.message}`, 'error');
+            });
+    }
+
+    // Load trades with infinite scroll
+    let currentPage = 1;
+    let currentAccountId = null;
+    let isLoading = false;
+    let hasMore = true;
+
+    function loadTrades(accountId) {
+        currentAccountId = accountId;
+        currentPage = 1;
+        hasMore = true;
+        document.getElementById('all-trades-body').innerHTML = '';
+        loadMoreTrades();
+    }
+
+    function loadMoreTrades() {
+        if (isLoading || !hasMore) return;
+        
+        isLoading = true;
+        document.getElementById('loading-indicator').classList.remove('hidden');
+
+        fetch(`${window.config.backendUrl}/api/trades/history?account_id=${currentAccountId}&page=${currentPage}&limit=50`)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                const tbody = document.getElementById('all-trades-body');
+                data.trades.forEach(trade => {
+                    tbody.appendChild(createTradeRow(trade));
+                });
+                hasMore = data.has_more;
+                currentPage++;
+                isLoading = false;
+                document.getElementById('loading-indicator').classList.add('hidden');
+            })
+            .catch(err => {
+                showToast(`Failed to load trades: ${err.message}`, 'error');
+                isLoading = false;
+                document.getElementById('loading-indicator').classList.add('hidden');
+            });
+    }
+
+    // Create trade row
+    function createTradeRow(trade) {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        row.innerHTML = `
+            <td>
+                <input type="checkbox" name="trade" value="${trade.trade_id}" 
+                       class="rounded border-gray-300 text-primary focus:ring-primary">
+            </td>
+            <td>${trade.trade_id}</td>
+            <td>${trade.account_id}</td>
+            <td>${trade.symbol}</td>
+            <td>${trade.quantity}</td>
+            <td>${trade.price}</td>
+            <td>${trade.order_type}</td>
+            <td>${trade.product_type}</td>
+            <td>${parseTimestamp(trade.timestamp)}</td>
+        `;
+        return row;
+    }
+
+    // Toggle all trades
+    function toggleAllTrades(checkbox) {
+        const panel = checkbox.closest('table').querySelector('tbody');
+        panel.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.checked = checkbox.checked;
+        });
+    }
+
+    // Load tags
+    function loadTags() {
+        fetch(`${window.config.backendUrl}/api/trades/tags`)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            })
+            .then(tags => {
+                // Update tag select
+                const select = document.getElementById('tag-select');
+                select.innerHTML = '<option value="">Select Tag</option>';
+                tags.forEach(tag => {
+                    const option = document.createElement('option');
+                    option.value = tag;
+                    option.textContent = tag;
+                    select.appendChild(option);
+                });
+
+                // Update recent tags
+                const recentTags = document.getElementById('recent-tags');
+                recentTags.innerHTML = '';
+                tags.forEach(tag => {
+                    const tagEl = document.createElement('div');
+                    tagEl.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+                    tagEl.textContent = tag;
+                    tagEl.onclick = () => {
+                        document.getElementById('tag-input').value = tag;
+                        recentTags.classList.add('hidden');
+                    };
+                    recentTags.appendChild(tagEl);
+                });
+            })
+            .catch(err => {
+                showToast(`Failed to load tags: ${err.message}`, 'error');
+            });
+    }
+
+    // Export trades
+    function exportTrades(type) {
+        const panel = type === 'live' ? 'trades-body' : 'all-trades-body';
+        const selectedTrades = Array.from(document.getElementById(panel).querySelectorAll('input[type="checkbox"]:checked'))
+            .map(cb => cb.value);
+        
+        if (selectedTrades.length === 0) {
+            showToast('Please select trades to export', 'warning');
+            return;
+        }
+
+        const tag = type === 'live' ? 
+            document.getElementById('tag-select').value : 
+            document.getElementById('tag-input').value;
+
+        if (!tag) {
+            showToast('Please select or enter a tag', 'warning');
+            return;
+        }
+
+        fetch(`${window.config.backendUrl}/api/trades/export`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                trade_ids: selectedTrades,
+                tag: tag
+            })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showToast('Trades exported successfully', 'success');
+            } else {
+                throw new Error(data.error || 'Export failed');
+            }
+        })
+        .catch(err => {
+            showToast(`Failed to export trades: ${err.message}`, 'error');
+        });
+    }
+
+    // Initialize
+    function initialize() {
+        // Set up infinite scroll observer
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                loadMoreTrades();
+            }
+        });
+        observer.observe(document.getElementById('loading-indicator'));
+
+        // Set up tag input
+        const tagInput = document.getElementById('tag-input');
+        const recentTags = document.getElementById('recent-tags');
+        
+        tagInput.addEventListener('focus', () => {
+            recentTags.classList.remove('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!tagInput.contains(e.target) && !recentTags.contains(e.target)) {
+                recentTags.classList.add('hidden');
+            }
+        });
+
+        // Load initial tags
+        loadTags();
+
+        // Set up export buttons
+        document.getElementById('live-export-btn').addEventListener('click', () => {
+            exportTrades('live');
+        });
+
+        document.getElementById('all-export-btn').addEventListener('click', () => {
+            exportTrades('all');
+        });
+    }
+
+    // Call initialize when the partial is loaded
+    initialize();
+</script> 
