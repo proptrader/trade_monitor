@@ -45,15 +45,25 @@ class SheetsService:
             # Prepare data
             data = []
             for trade in trades:
+                # Get values with fallbacks to ensure we always have something to display
+                order_id = trade.get('order_id', trade.get('trade_id', ''))
+                account_id = trade.get('account_id', '')
+                symbol = trade.get('tradingsymbol', trade.get('symbol', ''))
+                quantity = trade.get('quantity', '')
+                price = trade.get('price', '')
+                order_type = trade.get('order_type', '')
+                product = trade.get('product', trade.get('product_type', ''))
+                timestamp = trade.get('timestamp', '')
+                
                 row = [
-                    trade.get('order_id', ''),
-                    trade.get('account_id', ''),
-                    trade.get('tradingsymbol', ''),
-                    trade.get('quantity', ''),
-                    trade.get('price', ''),
-                    trade.get('order_type', ''),
-                    trade.get('product', ''),
-                    trade.get('timestamp', ''),
+                    order_id,
+                    account_id,
+                    symbol,
+                    quantity,
+                    price,
+                    order_type,
+                    product,
+                    timestamp,
                     tag
                 ]
                 data.append(row)

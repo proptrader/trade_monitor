@@ -5,21 +5,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trade Monitor</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#1a56db',
-                        success: '#059669',
-                        error: '#dc2626',
-                        warning: '#d97706'
+    <!-- Tailwind CSS -->
+    <script id="tailwind-script">
+        // Load Tailwind CSS
+        function loadTailwind() {
+            const script = document.createElement('script');
+            script.id = 'tailwind-cdn';
+            script.src = 'https://cdn.tailwindcss.com';
+            script.onload = function() {
+                tailwind.config = {
+                    theme: {
+                        extend: {
+                            colors: {
+                                primary: '#1a56db',
+                                success: '#059669',
+                                error: '#dc2626',
+                                warning: '#d97706'
+                            }
+                        }
                     }
-                }
-            }
+                };
+                // Apply styling
+                document.body.classList.add('bg-gray-100');
+                
+                // Set Tailwind as loaded and dispatch event
+                setTimeout(() => {
+                    window.tailwindLoaded = true;
+                    const tailwindReadyEvent = new CustomEvent('tailwind:ready');
+                    document.dispatchEvent(tailwindReadyEvent);
+                    console.log('Tailwind CSS is ready');
+                }, 300);
+            };
+            document.head.appendChild(script);
         }
+
+        // Always load Tailwind
+        loadTailwind();
+        
+        // Global utility to run code when Tailwind is ready
+        window.runWhenTailwindReady = function(callback) {
+            if (window.tailwindLoaded) {
+                callback();
+            } else {
+                document.addEventListener('tailwind:ready', callback);
+            }
+        };
     </script>
+    
+    <!-- Base styles to ensure the UI is usable if needed -->
+    <style id="base-styles">
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.5;
+            margin: 0;
+            background-color: #f3f4f6;
+        }
+        body * {
+            box-sizing: border-box;
+        }
+        nav {
+            background-color: white;
+            padding: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        main {
+            padding: 1rem;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+        a {
+            text-decoration: none;
+            color: #1a56db;
+            margin: 0 0.5rem;
+        }
+        #toast {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
 </head>
 <body class="bg-gray-100">
     <div class="min-h-screen">
@@ -31,7 +102,7 @@
                         <div class="flex-shrink-0 flex items-center">
                             <h1 class="text-xl font-bold text-gray-900">Trade Monitor</h1>
                         </div>
-                        <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <div class="sm:ml-6 sm:flex sm:space-x-8">
                             <a id="nav-dashboard" href="/dashboard" class="border-primary text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium" hx-get="/dashboard" hx-target="#content" hx-push-url="/dashboard">
                                 Dashboard
                             </a>
@@ -66,6 +137,33 @@
     </div>
 
     <script>
+        // Global utility function to check if an element exists
+        window.elementExists = function(selector) {
+            return document.querySelector(selector) !== null;
+        };
+        
+        // Global utility to wait for an element to exist
+        window.waitForElement = function(selector, callback, timeout = 5000) {
+            const startTime = Date.now();
+            
+            const checkElement = function() {
+                const element = document.querySelector(selector);
+                if (element) {
+                    callback(element);
+                    return;
+                }
+                
+                if (Date.now() - startTime > timeout) {
+                    console.error(`Timeout waiting for element: ${selector}`);
+                    return;
+                }
+                
+                setTimeout(checkElement, 100);
+            };
+            
+            checkElement();
+        };
+        
         // Show toast notification
         function showToast(message, type = 'info') {
             const toast = document.getElementById('toast');
@@ -84,6 +182,9 @@
                 toast.classList.add('hidden');
             }, 3000);
         }
+
+        // Expose the showToast function globally so it can be used from any page
+        window.showToast = showToast;
 
         // Handle HTMX errors
         document.body.addEventListener('htmx:error', function(evt) {
@@ -137,6 +238,15 @@
             if (url === '/' && document.getElementById('content').innerHTML.trim() === '') {
                 document.getElementById('nav-dashboard').click();
             }
+        });
+        
+        // Listen for the tailwind:ready event to initialize components
+        document.addEventListener('tailwind:ready', function() {
+            console.log('Tailwind is ready, initializing components...');
+            
+            // Dispatch a new event that component scripts can listen for
+            const componentReadyEvent = new CustomEvent('components:initialize');
+            document.dispatchEvent(componentReadyEvent);
         });
     </script>
 </body>

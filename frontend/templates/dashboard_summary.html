@@ -1,54 +1,173 @@
-<div class="bg-white shadow-sm rounded-lg p-6">
-    <h2 class="text-2xl font-bold mb-4">Dashboard Overview</h2>
-    <div id="dashboard-loading" class="text-gray-500">Loading...</div>
-    <div id="dashboard-error" class="text-red-600 hidden"></div>
-    <div id="dashboard-content" class="hidden">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div class="bg-gray-50 rounded-lg p-4 text-center">
-                <div id="active-accounts" class="text-4xl font-bold text-primary">-</div>
-                <div class="text-gray-600 mt-2">Active Accounts</div>
+<div class="bg-white shadow-sm rounded-lg p-6" id="dashboard-container" style="background-color: white; border-radius: 0.5rem; padding: 1.5rem; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+    <h2 class="text-2xl font-bold mb-4" style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem;">Dashboard Overview</h2>
+    <div id="dashboard-loading" class="text-gray-500" style="color: #6b7280;">Loading...</div>
+    <div id="dashboard-error" class="text-red-600 hidden" style="color: #dc2626; display: none;"></div>
+    <div id="dashboard-content" class="hidden" style="display: none;">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6" style="margin-bottom: 1.5rem;">
+            <div class="bg-gray-50 rounded-lg p-4 text-center" style="background-color: #f9fafb; border-radius: 0.5rem; padding: 1rem; text-align: center;">
+                <div id="active-accounts" class="text-4xl font-bold text-primary" style="font-size: 2.25rem; font-weight: bold; color: #1a56db;">-</div>
+                <div class="text-gray-600 mt-2" style="color: #4b5563; margin-top: 0.5rem;">Active Accounts</div>
             </div>
         </div>
         <div>
-            <h3 class="text-lg font-semibold mb-2">Trades Executed (Current Date)</h3>
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <h3 class="text-lg font-semibold mb-2" style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem;">Trades Executed (Current Date)</h3>
+            <table class="min-w-full divide-y divide-gray-200" style="width: 100%; border-collapse: collapse;">
+                <thead class="bg-gray-50" style="background-color: #f9fafb;">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account ID</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trades Executed</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="padding: 0.75rem 1.5rem; text-align: left; font-size: 0.75rem; font-weight: 500; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Account ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="padding: 0.75rem 1.5rem; text-align: left; font-size: 0.75rem; font-weight: 500; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em;">Trades Executed</th>
                     </tr>
                 </thead>
-                <tbody id="trades-executed-body" class="bg-white divide-y divide-gray-200">
+                <tbody id="trades-executed-body" class="bg-white divide-y divide-gray-200" style="background-color: white;">
                 </tbody>
             </table>
         </div>
     </div>
 </div>
+
+<!-- Add inline styles to force visibility of key elements regardless of CSS -->
+<style>
+    #dashboard-content.force-visible {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    /* Additional overrides for Tailwind */
+    .force-visible {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    /* Make sure the primary color shows even if Tailwind classes don't work */
+    .text-primary-fallback {
+        color: #1a56db !important;
+    }
+</style>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+// Function to ensure elements are visible regardless of CSS issues
+function forceElementsVisible() {
+    // Force hidden elements to be visible
+    const dashboardContent = document.getElementById('dashboard-content');
+    if (dashboardContent) {
+        dashboardContent.style.display = 'block';
+        dashboardContent.classList.remove('hidden');
+        dashboardContent.classList.add('force-visible');
+    }
+    
+    // Make sure primary text color is applied
+    const activeAccounts = document.getElementById('active-accounts');
+    if (activeAccounts) {
+        activeAccounts.style.color = '#1a56db';
+        activeAccounts.classList.add('text-primary-fallback');
+    }
+}
+
+// Function to load dashboard data
+function loadDashboardData() {
+    // Ensure showToast is available
+    if (typeof window.showToast !== 'function') {
+        window.showToast = function(message, type) {
+            console.log(`[Toast] ${type}: ${message}`);
+            alert(`${type}: ${message}`);
+        };
+    }
+    
+    // Make network request
     fetch('http://localhost:5000/api/trades/dashboard/overview')
         .then(response => response.json())
         .then(data => {
-            document.getElementById('dashboard-loading').classList.add('hidden');
+            const loadingElement = document.getElementById('dashboard-loading');
+            const contentElement = document.getElementById('dashboard-content');
+            const errorElement = document.getElementById('dashboard-error');
+            
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+            
             if (data.error) {
-                document.getElementById('dashboard-error').textContent = data.error;
-                document.getElementById('dashboard-error').classList.remove('hidden');
+                if (errorElement) {
+                    errorElement.textContent = data.error;
+                    errorElement.style.display = 'block';
+                }
                 return;
             }
-            document.getElementById('dashboard-content').classList.remove('hidden');
-            document.getElementById('active-accounts').textContent = data.active_accounts;
+            
+            // Display dashboard content
+            if (contentElement) {
+                contentElement.style.display = 'block';
+            }
+            
+            // Update active accounts
+            const activeAccountsElement = document.getElementById('active-accounts');
+            if (activeAccountsElement) {
+                activeAccountsElement.textContent = data.active_accounts;
+            }
+            
+            // Update trades table
             const tbody = document.getElementById('trades-executed-body');
-            tbody.innerHTML = '';
-            data.trades_executed.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap">${row.account_id}</td><td class="px-6 py-4 whitespace-nowrap">${row.count}</td>`;
-                tbody.appendChild(tr);
-            });
+            if (tbody) {
+                tbody.innerHTML = '';
+                data.trades_executed.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td class="px-6 py-4 whitespace-nowrap" style="padding: 1rem 1.5rem; white-space: nowrap;">${row.account_id}</td><td class="px-6 py-4 whitespace-nowrap" style="padding: 1rem 1.5rem; white-space: nowrap;">${row.count}</td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+            
+            // Force visibility as a last resort
+            forceElementsVisible();
         })
         .catch(err => {
-            document.getElementById('dashboard-loading').classList.add('hidden');
-            document.getElementById('dashboard-error').textContent = err;
-            document.getElementById('dashboard-error').classList.remove('hidden');
+            // Update UI to show error
+            const loadingElement = document.getElementById('dashboard-loading');
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+            
+            const errorElement = document.getElementById('dashboard-error');
+            if (errorElement) {
+                errorElement.textContent = err.toString();
+                errorElement.style.display = 'block';
+            }
         });
+}
+
+// Initialize dashboard
+function initializeDashboard() {
+    // Force elements to be visible immediately
+    forceElementsVisible();
+    
+    // Load dashboard data
+    loadDashboardData();
+}
+
+// Check if the base page's Tailwind is ready before initializing
+if (typeof window.runWhenTailwindReady === 'function') {
+    window.runWhenTailwindReady(initializeDashboard);
+} else {
+    // Fallback if the function doesn't exist
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check for tailwind:ready event
+        if (window.tailwindLoaded) {
+            initializeDashboard();
+        } else {
+            document.addEventListener('tailwind:ready', initializeDashboard);
+            
+            // Set a timeout just in case
+            setTimeout(function() {
+                if (!window.tailwindLoaded) {
+                    initializeDashboard();
+                }
+            }, 2000);
+        }
+    });
+}
+
+// Also listen for components:initialize as a backup
+document.addEventListener('components:initialize', function() {
+    initializeDashboard();
 });
 </script> 

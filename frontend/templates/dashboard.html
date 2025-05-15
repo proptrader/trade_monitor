@@ -34,7 +34,7 @@
                         <select id="tag-select" class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary">
                             <option value="">Select Tag</option>
                         </select>
-                        <button id="live-export-btn" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90">
+                        <button id="live-export-btn" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90" style="background-color: #1a56db; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer;">
                             Export to Google Sheets
                         </button>
                     </div>
@@ -87,7 +87,7 @@
                                 <!-- Recent tags will be loaded here -->
                             </div>
                         </div>
-                        <button id="all-export-btn" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90">
+                        <button id="all-export-btn" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90" style="background-color: #1a56db; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; cursor: pointer;">
                             Export to Google Sheets
                         </button>
                     </div>
@@ -123,7 +123,109 @@
     </div>
 </div>
 
+<!-- Add inline styles to ensure export buttons are always clickable -->
+<style>
+    /* Force buttons to be clickable regardless of CSS issues */
+    #live-export-btn, #all-export-btn {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        opacity: 1 !important;
+    }
+    
+    /* Make sure primary color shows even if Tailwind classes don't work */
+    .bg-primary-fallback {
+        background-color: #1a56db !important;
+    }
+    
+    .text-white-fallback {
+        color: white !important;
+    }
+    
+    /* Style the alternative form buttons */
+    .alt-export-form {
+        display: inline-block;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .alt-export-btn {
+        background-color: #1a56db !important;
+        color: white !important;
+        padding: 0.5rem 1rem !important;
+        border-radius: 0.375rem !important;
+        border: none !important;
+        cursor: pointer !important;
+        font-size: 0.875rem !important;
+        font-weight: 500 !important;
+    }
+    
+    /* Hide form fields */
+    .hidden-field {
+        display: none !important;
+    }
+</style>
+
 <script>
+    // Define showToast if it doesn't exist (for when loaded as a partial)
+    if (typeof showToast !== 'function') {
+        function showToast(message, type = 'info') {
+            if (window.showToast) {
+                // Use global showToast if available
+                window.showToast(message, type);
+                return;
+            }
+            
+            let toast = document.getElementById('toast');
+            let toastMessage = document.getElementById('toast-message');
+            
+            if (!toast) {
+                // Create toast element if it doesn't exist
+                const toastDiv = document.createElement('div');
+                toastDiv.id = 'toast';
+                toastDiv.className = 'fixed bottom-4 right-4 hidden';
+                toastDiv.style.position = 'fixed';
+                toastDiv.style.bottom = '1rem';
+                toastDiv.style.right = '1rem';
+                toastDiv.style.zIndex = '9999';
+                
+                const innerDiv = document.createElement('div');
+                innerDiv.className = 'bg-white rounded-lg shadow-lg p-4';
+                innerDiv.style.backgroundColor = 'white';
+                innerDiv.style.borderRadius = '0.5rem';
+                innerDiv.style.padding = '1rem';
+                innerDiv.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                
+                const paragraph = document.createElement('p');
+                paragraph.id = 'toast-message';
+                
+                innerDiv.appendChild(paragraph);
+                toastDiv.appendChild(innerDiv);
+                document.body.appendChild(toastDiv);
+                
+                toastMessage = paragraph;
+                toast = toastDiv;
+            }
+            
+            toastMessage.textContent = message;
+            
+            // Set text color based on type
+            if (type === 'error') {
+                toastMessage.style.color = '#dc2626';
+            } else if (type === 'success') {
+                toastMessage.style.color = '#059669';
+            } else if (type === 'warning') {
+                toastMessage.style.color = '#d97706';
+            } else {
+                toastMessage.style.color = '#1f2937';
+            }
+            
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+    }
+
     // Tab switching
     document.getElementById('live-trades-tab').addEventListener('click', () => {
         document.getElementById('live-trades-panel').classList.remove('hidden');
@@ -263,8 +365,10 @@
 
     // Toggle all trades
     function toggleAllTrades(checkbox) {
-        const checkboxes = document.querySelectorAll('input[type="checkbox"][name="trade"]');
+        const container = checkbox.closest('table').querySelector('tbody');
+        const checkboxes = container.querySelectorAll('input[type="checkbox"][name="trade"]');
         checkboxes.forEach(cb => cb.checked = checkbox.checked);
+        updateExportButtonState();
     }
 
     // Handle trade replication
@@ -280,42 +384,204 @@
         }
     });
 
-    document.addEventListener('DOMContentLoaded', function() {
-        // Live Trades export
+    // Update export button state based on selection
+    function updateExportButtonState() {
+        // Get all selected trades
+        const liveTrades = Array.from(document.querySelectorAll('#trades-body input[name="trade"]:checked'));
+        const allTrades = Array.from(document.querySelectorAll('#all-trades-body input[name="trade"]:checked'));
+        
+        // Update live export button
         const liveExportBtn = document.getElementById('live-export-btn');
         if (liveExportBtn) {
-            liveExportBtn.onclick = function() {
-                const selectedTrades = Array.from(document.querySelectorAll('#trades-body input[name="trade"]:checked')).map(cb => cb.value);
-                const tag = document.getElementById('tag-select').value;
-                fetch('http://localhost:5000/api/trades/export', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ trades: selectedTrades, tag: tag })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.message) showToast(data.message, 'success');
-                    else if (data.error) showToast(data.error, 'error');
-                });
-            };
+            if (liveTrades.length > 0) {
+                liveExportBtn.removeAttribute('disabled');
+                liveExportBtn.style.opacity = '1';
+                liveExportBtn.style.cursor = 'pointer';
+            } else {
+                liveExportBtn.setAttribute('disabled', 'disabled');
+                liveExportBtn.style.opacity = '0.5';
+                liveExportBtn.style.cursor = 'not-allowed';
+            }
         }
-        // All Trades export
+        
+        // Update all export button
         const allExportBtn = document.getElementById('all-export-btn');
         if (allExportBtn) {
-            allExportBtn.onclick = function() {
-                const selectedTrades = Array.from(document.querySelectorAll('#all-trades-body input[name="trade"]:checked')).map(cb => cb.value);
-                const tag = document.getElementById('tag-input').value;
-                fetch('http://localhost:5000/api/trades/export', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ trades: selectedTrades, tag: tag, account_id: currentAccountId })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.message) showToast(data.message, 'success');
-                    else if (data.error) showToast(data.error, 'error');
+            if (allTrades.length > 0) {
+                allExportBtn.removeAttribute('disabled');
+                allExportBtn.style.opacity = '1';
+                allExportBtn.style.cursor = 'pointer';
+            } else {
+                allExportBtn.setAttribute('disabled', 'disabled');
+                allExportBtn.style.opacity = '0.5';
+                allExportBtn.style.cursor = 'not-allowed';
+            }
+        }
+    }
+
+    // Initialize export functionality
+    function initializeExport() {
+        // Find the export buttons
+        const liveExportBtn = document.getElementById('live-export-btn');
+        const allExportBtn = document.getElementById('all-export-btn');
+        
+        // Ensure button has inline styles
+        if (liveExportBtn) {
+            liveExportBtn.style.backgroundColor = '#1a56db';
+            liveExportBtn.style.color = 'white';
+            liveExportBtn.style.padding = '0.5rem 1rem';
+            liveExportBtn.style.borderRadius = '0.375rem';
+            liveExportBtn.style.cursor = 'pointer';
+        }
+        
+        if (allExportBtn) {
+            allExportBtn.style.backgroundColor = '#1a56db';
+            allExportBtn.style.color = 'white';
+            allExportBtn.style.padding = '0.5rem 1rem';
+            allExportBtn.style.borderRadius = '0.375rem';
+            allExportBtn.style.cursor = 'pointer';
+        }
+        
+        // Add button event listeners        
+        if (liveExportBtn) {
+            liveExportBtn.addEventListener('click', handleLiveExport);
+        }
+        
+        if (allExportBtn) {
+            allExportBtn.addEventListener('click', handleAllExport);
+        }
+        
+        // Initialize export button states
+        updateExportButtonState();
+    }
+    
+    // Handle Live Export
+    function handleLiveExport(e) {
+        e.preventDefault();
+        
+        try {
+            const selectedTrades = Array.from(document.querySelectorAll('#trades-body input[name="trade"]:checked')).map(cb => cb.value);
+            const tag = document.getElementById('tag-select')?.value || '';
+            
+            if (selectedTrades.length === 0) {
+                showToast('Please select at least one trade to export', 'error');
+                return;
+            }
+            
+            if (!tag) {
+                showToast('Please select a tag for the export', 'error');
+                return;
+            }
+            
+            // Make the fetch request
+            fetch('http://localhost:5000/api/trades/export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ trades: selectedTrades, tag: tag })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) showToast(data.message, 'success');
+                else if (data.error) showToast(data.error, 'error');
+            })
+            .catch(err => {
+                showToast('Export failed: ' + err.message, 'error');
+            });
+        } catch (err) {
+            showToast('Export processing error: ' + err.message, 'error');
+        }
+    }
+    
+    // Handle All Export
+    function handleAllExport(e) {
+        e.preventDefault();
+        
+        try {
+            const selectedTrades = Array.from(document.querySelectorAll('#all-trades-body input[name="trade"]:checked')).map(cb => cb.value);
+            const tag = document.getElementById('tag-input')?.value || '';
+            
+            if (selectedTrades.length === 0) {
+                showToast('Please select at least one trade to export', 'error');
+                return;
+            }
+            
+            if (!tag) {
+                showToast('Please enter a tag for the export', 'error');
+                return;
+            }
+            
+            if (!currentAccountId) {
+                showToast('No account ID available. Please select an account.', 'error');
+                return;
+            }
+            
+            // Make the fetch request
+            fetch('http://localhost:5000/api/trades/export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ trades: selectedTrades, tag: tag, account_id: currentAccountId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) showToast(data.message, 'success');
+                else if (data.error) showToast(data.error, 'error');
+            })
+            .catch(err => {
+                showToast('Export failed: ' + err.message, 'error');
+            });
+        } catch (err) {
+            showToast('Export processing error: ' + err.message, 'error');
+        }
+    }
+    
+    // Initialize export on DOM load or when Tailwind is ready
+    if (typeof window.runWhenTailwindReady === 'function') {
+        window.runWhenTailwindReady(initializeExport);
+    } else {
+        document.addEventListener('DOMContentLoaded', initializeExport);
+    }
+    
+    // Listen for the components:initialize event
+    document.addEventListener('components:initialize', function() {
+        initializeExport();
+    });
+    
+    // Listen for changes in checkboxes using event delegation
+    document.addEventListener('change', function(e) {
+        if (e.target.type === 'checkbox' && e.target.name === 'trade') {
+            updateExportButtonState();
+        }
+    });
+
+    // Add a mutation observer to watch for new trades being added to the DOM
+    const tradeBodyObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                // New nodes were added, check if they have checkboxes
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1) { // Element node
+                        const checkboxes = node.querySelectorAll('input[type="checkbox"][name="trade"]');
+                        if (checkboxes.length > 0) {
+                            // New trades with checkboxes were added
+                            updateExportButtonState();
+                        }
+                    }
                 });
-            };
+            }
+        });
+    });
+
+    // Start observing both trade bodies
+    document.addEventListener('DOMContentLoaded', function() {
+        const liveTradesBody = document.getElementById('trades-body');
+        const allTradesBody = document.getElementById('all-trades-body');
+        
+        if (liveTradesBody) {
+            tradeBodyObserver.observe(liveTradesBody, { childList: true, subtree: true });
+        }
+        
+        if (allTradesBody) {
+            tradeBodyObserver.observe(allTradesBody, { childList: true, subtree: true });
         }
     });
 </script> 
