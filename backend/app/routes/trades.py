@@ -101,12 +101,15 @@ def export_trades():
     """Export selected trades to Google Sheets by trade ID (fetching from Kite API)."""
     try:
         log_info("[Export API] Export request received")
-        
+        log_info(f"[Export API] Request headers: {dict(request.headers)}")
+        log_info(f"[Export API] Request data (raw): {request.data}")
+
         # Check content type to handle both JSON and form data
         if request.is_json:
             log_info("[Export API] Processing JSON request")
             data = request.json
-            trade_ids = data.get('trades', [])
+            log_info(f"[Export API] Parsed JSON: {data}")
+            trade_ids = data.get('trade_ids', [])
             tag = data.get('tag')
             account_id = data.get('account_id')
         else:
@@ -115,7 +118,8 @@ def export_trades():
             trade_ids = request.form.get('trades', '')
             tag = request.form.get('tag', '')
             account_id = request.form.get('account_id', '')
-            
+            log_info(f"[Export API] Form data - trades: {trade_ids}, tag: {tag}, account_id: {account_id}")
+
             # Handle different trade_ids formats
             if trade_ids:
                 if isinstance(trade_ids, str):
@@ -135,10 +139,10 @@ def export_trades():
                 else:
                     log_error("[Export API] Unexpected trade_ids format")
                     trade_ids = []
-        
+
         # Log the received data
-        log_info(f"[Export API] Received data - tag: {tag}, account_id: {account_id}, trade_ids count: {len(trade_ids) if trade_ids else 0}")
-        
+        log_info(f"[Export API] Received data - tag: {tag}, account_id: {account_id}, trade_ids: {trade_ids}")
+
         # Validate request data
         if not trade_ids:
             log_error("[Export API] No trades selected")
@@ -146,42 +150,49 @@ def export_trades():
         if not tag:
             log_error("[Export API] Tag is required")
             return jsonify({"error": "Tag is required"}), 400
-        
+
         # If no account ID is provided, try to determine from the trades
         if not account_id:
             log_info("[Export API] No account ID provided, attempting to find from trade data")
             # Try to get account ID from the first trade if available
             all_accounts = kite_service.get_active_accounts()
+            log_info(f"[Export API] Active accounts: {all_accounts}")
             if all_accounts:
                 account_id = all_accounts[0]['account_id']
                 log_info(f"[Export API] Using first active account: {account_id}")
             else:
                 log_error("[Export API] No active accounts found")
                 return jsonify({"error": "No active account available"}), 400
-            
+
         # Log account active status
         account = next((acc for acc in kite_service.get_active_accounts() if acc['account_id'] == account_id), None)
         if account:
             log_info(f"[Export API] Account {account_id} is active")
         else:
             log_error(f"[Export API] Account {account_id} is not active or not found")
-            
+
         # Fetch all trades for the account
         log_info(f"[Export API] Fetching trades for account {account_id}")
         all_trades = kite_service.get_trades_for_account(account_id)
         log_info(f"[Export API] Found {len(all_trades)} total trades for account {account_id}")
-        
+        if len(all_trades) > 0:
+            log_info(f"[Export API] Sample trade: {all_trades[0]}")
+
         # Filter for selected trades
         selected_trades = [trade for trade in all_trades if trade['trade_id'] in trade_ids]
         log_info(f"[Export API] Selected {len(selected_trades)} trades for export")
-        
+        if selected_trades:
+            log_info(f"[Export API] Selected trade IDs: {[t['trade_id'] for t in selected_trades]}")
+
         if not selected_trades:
             log_error(f"[Export API] No trades found for selected IDs: {trade_ids}")
             return jsonify({"error": "No matching trades found for export."}), 400
-        
+
         # Export to Google Sheets
         log_info(f"[Export API] Exporting {len(selected_trades)} trades to Google Sheets with tag: {tag}")
-        if sheets_service.export_trades(selected_trades, tag):
+        export_result = sheets_service.export_trades(selected_trades, tag)
+        log_info(f"[Export API] sheets_service.export_trades result: {export_result}")
+        if export_result:
             log_success(f"[Export API] Successfully exported {len(selected_trades)} trades for account {account_id}")
             return jsonify({"message": f"Successfully exported {len(selected_trades)} trades"})
         else:
@@ -213,4 +224,4 @@ def dashboard_overview():
         })
     except Exception as e:
         log_error(f"[Dashboard API] Error getting overview: {str(e)}")
-        return jsonify({'error': str(e)}), 500 
+        return jsonify({'error': str(e)}), 500

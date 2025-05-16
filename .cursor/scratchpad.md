@@ -397,3 +397,67 @@ The Trade Monitor application needs template updates to fix inheritance issues a
 10. Add error handling for HTMX requests
 11. Implement proper log level filtering and styling
 12. Add input validation before making API calls
+
+# Trade Monitor Performance Review
+
+## Background and Motivation
+- Recent caching implementation (both Redis and Flask-Caching) has been rolled back due to:
+  1. Dashboard overview functionality issues
+  2. Live trades functionality issues
+  3. Performance concerns
+- Need to reassess performance optimization strategy without relying on caching
+
+## Key Challenges and Analysis
+1. Performance Bottlenecks:
+   - API response times from Kite service
+   - Multiple API calls for the same data
+   - Heavy frontend data processing
+   - No optimization for repeated data requests
+
+2. Real-time Requirements:
+   - Live trade updates need immediate reflection
+   - Dashboard needs accurate, current data
+   - Account status needs real-time updates
+
+## High-level Task Breakdown
+
+### 1. Performance Profiling
+Success Criteria:
+- [ ] Profile API response times
+- [ ] Identify redundant API calls
+- [ ] Measure frontend rendering times
+- [ ] Document current performance baseline
+- [ ] Identify specific bottlenecks in the request chain
+
+### 2. Code Optimization
+Success Criteria:
+- [ ] Optimize KiteService data fetching
+- [ ] Reduce redundant API calls
+- [ ] Improve error handling and recovery
+- [ ] Optimize frontend data processing
+- [ ] Implement request debouncing where appropriate
+
+### 3. Frontend Optimization
+Success Criteria:
+- [ ] Optimize HTMX partial updates
+- [ ] Improve frontend rendering efficiency
+- [ ] Add better loading states
+- [ ] Optimize JavaScript event handling
+- [ ] Reduce unnecessary DOM updates
+
+## Project Status Board
+- [ ] Task 1: Performance Profiling
+- [ ] Task 2: Code Optimization
+- [ ] Task 3: Frontend Optimization
+
+## Next Steps
+1. Remove all caching-related code and dependencies
+2. Restore original functionality
+3. Begin performance profiling
+4. Identify optimization opportunities that don't require caching
+
+## Lessons
+1. Caching in real-time trading applications requires careful consideration
+2. Performance optimization should not compromise core functionality
+3. Need to maintain balance between performance and data accuracy
+4. Consider alternative optimization strategies before implementing caching

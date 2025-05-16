@@ -359,7 +359,8 @@
             },
             body: JSON.stringify({
                 trade_ids: selectedTrades,
-                tag: tag
+                tag: tag,
+                account_id: type === 'all' ? currentAccountId : undefined // or set the correct account ID for 'live'
             })
         })
         .then(response => {
